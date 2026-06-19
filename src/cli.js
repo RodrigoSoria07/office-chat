@@ -25,16 +25,31 @@ function identityFrom(opts) {
   return { name, avatar, color: cfg.color };
 }
 
+// Asks a series of questions on the terminal; returns the trimmed answers.
+async function prompt(questions) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const answers = {};
+  for (const [key, text] of Object.entries(questions)) {
+    answers[key] = (await rl.question(text)).trim();
+  }
+  rl.close();
+  return answers;
+}
+
 export async function createCommand(opts) {
   const port = Number(opts.port) || 4040;
   const password = opts.password || null;
 
-  // The host names the office (via --room or an interactive prompt).
+  // The host gives their name and names the office (via flags or prompts).
+  let name = opts.name;
   let room = opts.room;
-  if (!room) {
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    room = (await rl.question("Nombre de la oficina: ")).trim();
-    rl.close();
+  if (!name || !room) {
+    const ask = {};
+    if (!name) ask.name = "Tu nombre: ";
+    if (!room) ask.room = "Nombre de la oficina: ";
+    const a = await prompt(ask);
+    name = name || a.name;
+    room = room || a.room;
   }
   if (!room) room = "Oficina";
 
@@ -51,14 +66,22 @@ export async function createCommand(opts) {
     process.exit(1);
   }
   const ip = lanIp();
-  const identity = identityFrom(opts);
+  const identity = identityFrom({ ...opts, name });
   console.log(welcomeBanner({ room, joinHint: `office join ${ip}${port !== 4040 ? " --port " + port : ""}`, hosting: true }));
   await joinUrl(`ws://127.0.0.1:${port}`, identity, password);
 }
 
 export async function joinCommand(host, opts) {
   const port = Number(opts.port) || 4040;
-  const identity = identityFrom(opts);
+
+  // Ask the person their name unless they passed --name.
+  let name = opts.name;
+  if (!name) {
+    const a = await prompt({ name: "Tu nombre: " });
+    name = a.name;
+  }
+
+  const identity = identityFrom({ ...opts, name });
   console.log(welcomeBanner({ room: host, joinHint: null, hosting: false }));
   await joinUrl(`ws://${host}:${port}`, identity, opts.password || null);
 }

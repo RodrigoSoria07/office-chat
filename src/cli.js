@@ -1,5 +1,6 @@
 // src/cli.js
 import { networkInterfaces } from "node:os";
+import { createInterface } from "node:readline/promises";
 import { startServer } from "./transport/lanServer.js";
 import { createTransport } from "./transport/index.js";
 import { readConfig, writeConfig } from "./config.js";
@@ -27,7 +28,17 @@ function identityFrom(opts) {
 export async function createCommand(opts) {
   const port = Number(opts.port) || 4040;
   const password = opts.password || null;
-  const server = startServer({ port, password });
+
+  // The host names the office (via --room or an interactive prompt).
+  let room = opts.room;
+  if (!room) {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    room = (await rl.question("Nombre de la oficina: ")).trim();
+    rl.close();
+  }
+  if (!room) room = "Oficina";
+
+  const server = startServer({ port, password, room });
   try {
     await server.ready;
   } catch (e) {
@@ -41,7 +52,7 @@ export async function createCommand(opts) {
   }
   const ip = lanIp();
   const identity = identityFrom(opts);
-  console.log(welcomeBanner({ room: opts.room || "office", joinHint: `office join ${ip}${port !== 4040 ? " --port " + port : ""}`, hosting: true }));
+  console.log(welcomeBanner({ room, joinHint: `office join ${ip}${port !== 4040 ? " --port " + port : ""}`, hosting: true }));
   await joinUrl(`ws://127.0.0.1:${port}`, identity, password);
 }
 

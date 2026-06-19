@@ -18,11 +18,14 @@ After the global install, the `office` command is available anywhere.
 
 ## Use
 
-Host an office (prints your LAN IP for others to join):
+Host an office (prints your LAN IP for others to join). El host pone el
+**nombre de la oficina** (te lo pregunta, o pásalo con `--room`):
 
 ```
-office create --name ana --avatar 👩‍💻
+office create --name ana --avatar 👩‍💻 --room "Oficina Creative-LATAM"
 ```
+
+Ese nombre aparece como título del panel para todos los que se unen.
 
 Join an office (use the IP the host shows):
 

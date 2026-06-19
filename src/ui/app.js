@@ -14,6 +14,7 @@ export function runApp({ transport, identity }) {
   let state = initialState();
   let me = null;             // my userId, set on welcome
   let channel = "#general";
+  let roomName = "Oficina";  // office name, set from welcome
 
   const screen = blessed.screen({ smartCSR: true, title: "Office", fullUnicode: true });
 
@@ -26,7 +27,7 @@ export function runApp({ transport, identity }) {
 
   const sidebar = blessed.box({
     top: 0, right: 0, width: 28, bottom: 3,
-    label: ` ${glyph.logo} Kreatech `,
+    label: ` ${glyph.logo} ${roomName} `,
     border: "line", style: { border: { fg: ACCENT } },
     padding: { left: 1 },
   });
@@ -64,6 +65,7 @@ export function runApp({ transport, identity }) {
     switch (a.type) {
       case MSG.WELCOME:
         me = a.userId;
+        if (a.room) { roomName = a.room; sidebar.setLabel(` ${glyph.logo} ${roomName} `); }
         state = {
           ...initialState(),
           channels: a.channels,

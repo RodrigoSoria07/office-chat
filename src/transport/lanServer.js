@@ -4,7 +4,7 @@ import { MSG, encode, decode } from "../protocol.js";
 import { initialState, reduce } from "../state.js";
 import { BRAND, rotationColor } from "../colors.js";
 
-export function startServer({ port = 4040, password = null } = {}) {
+export function startServer({ port = 4040, password = null, room = "Oficina" } = {}) {
   const wss = new WebSocketServer({ port });
   let state = initialState();
   const sockets = new Map();          // userId -> ws
@@ -82,6 +82,7 @@ export function startServer({ port = 4040, password = null } = {}) {
           type: MSG.WELCOME,
           userId,
           name,
+          room,
           channels: state.channels,
           channelPrivate: state.channelPrivate,
           users: state.users,

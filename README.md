@@ -1,0 +1,71 @@
+# Office — terminal chat for developers
+
+A real-time "virtual office" in your terminal. One person hosts, others join over
+the same network. Built as a Node.js CLI with a full-screen TUI styled after the
+Claude Code look (warm orange accent, rounded welcome banner, `✺` logo).
+
+## Install
+
+From inside `office-chat/`:
+
+```
+npm install
+npm install -g .
+```
+
+After the global install, the `office` command is available anywhere.
+(Or run without installing globally: `node bin/office.js <command>`.)
+
+## Use
+
+Host an office (prints your LAN IP for others to join):
+
+```
+office create --name ana --avatar 👩‍💻
+```
+
+Join an office (use the IP the host shows):
+
+```
+office join 192.168.1.5 --name leo --avatar 👨‍💻
+```
+
+Optional password to keep the room private:
+
+```
+office create --password teamsecret
+office join 192.168.1.5 --password teamsecret
+```
+
+## In-app commands
+
+`/join #channel` · `/dm @user msg` · `/status <text>` · `/away` · `/back` ·
+`/who` · `/board` · `/help` · `/quit`
+
+## Set your identity once
+
+```
+office config --name ana --avatar 👩‍💻 --color "#D97757"
+```
+
+Saved to `~/.office/config.json` and reused on every `create`/`join`.
+
+## How it works
+
+- `office create` starts an in-process WebSocket relay and joins it as a client.
+  If the host quits, the office closes.
+- Clients talk to the relay through a swappable `Transport` interface. v1 ships a
+  LAN transport (no internet, no accounts); a remote transport can be added later
+  behind the same interface.
+- The relay holds authoritative room state (roster, channels, recent history,
+  statuses) and broadcasts JSON messages to everyone.
+
+## Avatars
+
+Avatars are person emojis only: 👨‍💻 👩‍💻 👨 👩 🧑 (plus skin-tone variants).
+
+## Develop
+
+```
+npm test    # run the vitest suite
+```

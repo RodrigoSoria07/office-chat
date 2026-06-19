@@ -296,15 +296,18 @@ export function runApp({ transport, identity }) {
   }
 
   function cleanup() {
+    clearInterval(hintTimer);
     transport.close();
     screen.destroy();
     process.exit(0);
   }
 
   input.key(["enter"], () => handleSubmit(input.getValue()));
-  // Update the suggestion bar as the user types — WITHOUT rendering (the textbox
-  // re-renders itself per key; an extra render here would duplicate characters).
-  input.on("keypress", () => updateHint(input.getValue(), false));
+  // Refresh the suggestion bar from a background timer (NOT a keypress listener),
+  // and never render here — the textbox renders itself per key and paints the
+  // updated hint. Hooking the textbox's keypress / rendering on each key made
+  // blessed duplicate typed characters.
+  const hintTimer = setInterval(() => updateHint(input.getValue(), false), 150);
 
   // Ctrl+C twice to exit: the first press warns, the second (within 1.5s) quits.
   let lastCtrlC = 0;

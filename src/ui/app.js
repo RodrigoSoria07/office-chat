@@ -3,9 +3,8 @@ import blessed from "blessed";
 import { MSG } from "../protocol.js";
 import { initialState, reduce } from "../state.js";
 import { glyph, ACCENT, paint } from "./theme.js";
-import { renderRoster } from "./sidebar.js";
 import { renderMessageLine, renderSystemLine } from "./messages.js";
-import { renderTable } from "./table.js";
+import { renderTable, renderTableSidebar } from "./table.js";
 import { parseInput } from "./input.js";
 import { resolveColor, colorNames } from "../colors.js";
 import { stateNames, normalizeState } from "../states.js";
@@ -19,15 +18,15 @@ export function runApp({ transport, identity }) {
   const screen = blessed.screen({ smartCSR: true, title: "Office", fullUnicode: true });
 
   const messages = blessed.box({
-    top: 0, left: 0, right: 24, bottom: 3,
+    top: 0, left: 0, right: 28, bottom: 3,
     label: ` ${glyph.logo} Office · ${channel} `,
     border: "line", style: { border: { fg: ACCENT } },
     scrollable: true, alwaysScroll: true, tags: false, padding: { left: 1, right: 1 },
   });
 
   const sidebar = blessed.box({
-    top: 0, right: 0, width: 24, bottom: 3,
-    label: " In the office ",
+    top: 0, right: 0, width: 28, bottom: 3,
+    label: ` ${glyph.logo} La mesa `,
     border: "line", style: { border: { fg: ACCENT } },
     padding: { left: 1 },
   });
@@ -53,7 +52,7 @@ export function runApp({ transport, identity }) {
     screen.render();
   }
   function redrawSidebar() {
-    sidebar.setContent(renderRoster(state.users));
+    sidebar.setContent(renderTableSidebar(state));
     screen.render();
   }
   function lineFor(from, text) {

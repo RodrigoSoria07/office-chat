@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { resolveColor, colorNames, rotationColor, BRAND } from "../src/colors.js";
 import { stateColor, normalizeState, stateNames } from "../src/states.js";
-import { renderTable } from "../src/ui/table.js";
+import { renderTable, renderTableSidebar } from "../src/ui/table.js";
 import { initialState, reduce } from "../src/state.js";
 
 describe("colors", () => {
@@ -73,5 +73,15 @@ describe("table render", () => {
     expect(out).toContain("★");      // host marker on seat 6
     expect(out).toContain("vacío");  // unoccupied seats
     expect(out).toContain("MESA");
+  });
+
+  it("renders the compact sidebar table with the seated avatar and legend", () => {
+    let s = reduce(initialState(), { type: "join", userId: "u1", name: "ana", avatar: "👩‍💻", color: "#5B9BD5" });
+    s = reduce(s, { type: "seat", userId: "u1", seat: 6 });
+    const out = renderTableSidebar(s);
+    expect(out).toContain("MESA");
+    expect(out).toContain("👩‍💻");   // the emoji sits in its seat
+    expect(out).toContain("ana");   // legend
+    expect(out).toContain("★");     // host marker
   });
 });

@@ -36,3 +36,35 @@ export function renderTable(state) {
     "",
   ].join("\n");
 }
+
+// Compact table for the narrow right-hand panel: the emoji sits in its seat,
+// with a small legend (seat · name · status) below.
+export function renderTableSidebar(state) {
+  const hostId = state.seats[6];
+  const slot = (n) => {
+    const uid = state.seats[n];
+    if (!uid) return paint.dim(" ·· ");
+    const u = state.users[uid];
+    if (!u) return paint.dim(" ?? ");
+    return ` ${u.avatar}${uid === hostId ? "★" : " "}`;
+  };
+
+  const lines = [
+    paint.dim("  1   2   3"),
+    " " + [1, 2, 3].map(slot).join(" "),
+    paint.accent(" ══ MESA ══"),
+    " " + [4, 5, 6].map(slot).join(" "),
+    paint.dim("  4   5   6"),
+    "",
+  ];
+
+  for (const n of [1, 2, 3, 4, 5, 6]) {
+    const uid = state.seats[n];
+    if (!uid) continue;
+    const u = state.users[uid];
+    const star = uid === hostId ? "★" : "";
+    const st = u.statusText ? " " + stateBadge(u.statusText) : "";
+    lines.push(`${n} ${colorizeBold(u.name, u.color)}${star}${st}`);
+  }
+  return lines.join("\n");
+}

@@ -91,7 +91,9 @@ export function runApp({ transport, identity }) {
     return (me && state.users[me]?.statusText) || "";
   }
   // Suggestion bar: reacts to what's currently typed in the input.
-  function updateHint(raw) {
+  // While typing we must NOT call screen.render() (it duplicates characters in
+  // the blessed textbox); the textbox's own per-key render shows the new hint.
+  function updateHint(raw, render = true) {
     const v = (raw || "").trim();
     let out;
     if (v === "") {
@@ -121,7 +123,7 @@ export function runApp({ transport, identity }) {
       out = paint.dim(`${channel} · Enter para enviar · / para comandos`);
     }
     hint.setContent(out);
-    screen.render();
+    if (render) screen.render();
   }
 
   transport.onMessage((a) => {
@@ -300,8 +302,9 @@ export function runApp({ transport, identity }) {
   }
 
   input.key(["enter"], () => handleSubmit(input.getValue()));
-  // Update the suggestion bar as the user types (value updates just after the key).
-  input.on("keypress", () => setImmediate(() => updateHint(input.getValue())));
+  // Update the suggestion bar as the user types — WITHOUT rendering (the textbox
+  // re-renders itself per key; an extra render here would duplicate characters).
+  input.on("keypress", () => updateHint(input.getValue(), false));
 
   // Ctrl+C twice to exit: the first press warns, the second (within 1.5s) quits.
   let lastCtrlC = 0;

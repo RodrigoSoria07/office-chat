@@ -1,0 +1,21 @@
+{
+  "name": "office-chat",
+  "version": "0.1.0",
+  "description": "Real-time terminal chat office for developers",
+  "type": "module",
+  "bin": { "office": "bin/office.js" },
+  "scripts": {
+    "test": "vitest run",
+    "start": "node bin/office.js"
+  },
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "chalk": "^5.3.0",
+    "cli-highlight": "^2.1.11",
+    "commander": "^12.1.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0"
+  }
+}

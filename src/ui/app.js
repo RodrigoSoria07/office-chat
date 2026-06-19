@@ -26,7 +26,7 @@ export function runApp({ transport, identity }) {
 
   const sidebar = blessed.box({
     top: 0, right: 0, width: 28, bottom: 3,
-    label: ` ${glyph.logo} La mesa `,
+    label: ` ${glyph.logo} Kreatech `,
     border: "line", style: { border: { fg: ACCENT } },
     padding: { left: 1 },
   });

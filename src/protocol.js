@@ -1,6 +1,7 @@
 // src/protocol.js
 export const MSG = Object.freeze({
   JOIN: "join",
+  LEAVE: "leave",
   WELCOME: "welcome",
   MESSAGE: "message",
   DM: "dm",
@@ -10,6 +11,7 @@ export const MSG = Object.freeze({
   HISTORY: "history",
   COLOR: "color",
   SEAT: "seat",
+  KICK: "kick",
   SYSTEM: "system",
   ERROR: "error",
 });

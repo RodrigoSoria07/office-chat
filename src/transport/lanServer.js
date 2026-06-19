@@ -129,6 +129,26 @@ export function startServer({ port = 4040, password = null, room = "Oficina" } =
           state = reduce(state, { type: MSG.SEAT, userId, seat: n });
           broadcast({ type: MSG.SEAT, userId, seat: n });
         }
+      } else if (action.type === MSG.KICK) {
+        if (userId !== hostId) {
+          ws.send(encode({ type: MSG.ERROR, code: "KICK", message: "Solo el host puede expulsar" }));
+          return;
+        }
+        const wanted = String(action.target || "").replace(/^@/, "").trim().toLowerCase();
+        const entry = Object.entries(state.users).find(([, u]) => u.name.toLowerCase() === wanted);
+        if (!entry) {
+          ws.send(encode({ type: MSG.ERROR, code: "KICK", message: `No encontré a "${action.target}"` }));
+          return;
+        }
+        const [targetId, targetUser] = entry;
+        if (targetId === hostId) {
+          ws.send(encode({ type: MSG.ERROR, code: "KICK", message: "El host no puede expulsarse" }));
+          return;
+        }
+        sendTo(targetId, { type: MSG.KICK, by: state.users[userId]?.name ?? "el host" });
+        broadcast({ type: MSG.SYSTEM, text: `${targetUser.name} fue expulsado por ${state.users[userId]?.name ?? "el host"}` });
+        const tws = sockets.get(targetId);
+        if (tws) tws.close();
       } else if (action.type === MSG.CHANNEL && action.action === "create") {
         const name = action.name;
         if (!name || !name.startsWith("#")) {

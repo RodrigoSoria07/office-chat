@@ -75,6 +75,32 @@ describe("integration: relay + clients", () => {
     guest.close();
   });
 
+  it("lets the host kick a user but rejects kicks from non-hosts", async () => {
+    server = startServer({ port: 4060 });
+    await server.ready;
+    const url = "ws://127.0.0.1:4060";
+
+    const host = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "host", avatar: "👨‍💻", color: "#D97757" } });
+    const guest = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "leo", avatar: "👨‍💻", color: "#D97757" } });
+    await host.connect();
+    await guest.connect();
+
+    // a non-host cannot kick
+    const denied = waitFor(guest, (m) => m.type === MSG.ERROR && m.code === "KICK");
+    guest.send({ type: MSG.KICK, target: "host" });
+    expect((await denied).message).toMatch(/host/i);
+
+    // the host kicks the guest -> guest receives KICK, everyone sees the leave
+    const kicked = waitFor(guest, (m) => m.type === MSG.KICK).then((k) => { guest.close(); return k; });
+    const left = waitFor(host, (m) => m.type === MSG.LEAVE);
+    host.send({ type: MSG.KICK, target: "@leo" });
+    const k = await kicked;
+    expect(k.by).toBe("host");
+    await left;
+
+    host.close();
+  });
+
   it("keeps private-channel messages to members only", async () => {
     server = startServer({ port: 4059 });
     await server.ready;

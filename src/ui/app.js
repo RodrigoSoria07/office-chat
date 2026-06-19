@@ -24,6 +24,7 @@ const COMMANDS = [
   { name: "back",    desc: "volver disponible",      usage: "/back" },
   { name: "board",   desc: "estados de todos",       usage: "/board" },
   { name: "who",     desc: "quién está conectado",   usage: "/who" },
+  { name: "kick",    desc: "expulsar (host)",        usage: "/kick @usuario" },
   { name: "clear",   desc: "limpiar el chat",        usage: "/clear" },
   { name: "help",    desc: "ayuda",                  usage: "/help" },
   { name: "quit",    desc: "salir",                  usage: "/quit" },
@@ -179,6 +180,13 @@ export function runApp({ transport, identity }) {
         redrawSidebar();
         if (a.type === MSG.STATUS && a.userId === me) updateHint("");
         break;
+      case MSG.KICK:
+        // The server only sends KICK to the person being removed.
+        transport.close(); // stop auto-reconnect immediately so we don't rejoin
+        appendLine(paint.accent(`Fuiste expulsado de la oficina por ${a.by ?? "el host"}.`));
+        screen.render();
+        setTimeout(() => { screen.destroy(); process.exit(0); }, 1200);
+        break;
       case MSG.SYSTEM:
         appendLine(renderSystemLine(a.text));
         break;
@@ -267,11 +275,17 @@ export function runApp({ transport, identity }) {
         messages.setContent("");
         appendLine(paint.system("chat limpiado"));
         break;
+      case "kick": {
+        const target = arg.replace(/^@/, "").trim();
+        if (!target) { appendLine(paint.system("uso: /kick @usuario")); break; }
+        transport.send({ type: MSG.KICK, target });
+        break;
+      }
       case "who":   appendLine(Object.values(state.users).map((u) => u.name).join(", ")); break;
       case "board": appendLine(Object.values(state.users).map((u) => `${u.name}: ${u.statusText || "—"}`).join("\n")); break;
       case "help":  appendLine(paint.system(
         "/crear #ch [--privado clave] · /join #ch [clave] · /canales · /dm @user msg · " +
-        "/estado QA|Desarrollo|RYD · /color azul · /mesa · /asiento <1-5> · /away · /back · /who · /board · /clear · /quit"
+        "/estado QA|Desarrollo|RYD · /color azul · /mesa · /asiento <1-5> · /away · /back · /who · /board · /kick @user (host) · /clear · /quit"
       )); break;
       case "salir":
       case "quit":  cleanup(); break;

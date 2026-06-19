@@ -81,9 +81,13 @@ export function runApp({ transport, identity }) {
         if (a.channel === channel) appendLine(lineFor(a.from, a.text));
         break;
       }
-      case MSG.DM:
-        appendLine(paint.accent(`[DM] `) + lineFor(a.from, a.text));
+      case MSG.DM: {
+        const outgoing = a.from === me;
+        const other = state.users[outgoing ? a.to : a.from];
+        const arrow = outgoing ? "→" : "←";
+        appendLine(paint.accent(`[DM ${arrow} ${other?.name ?? "?"}]`) + "  " + a.text);
         break;
+      }
       case MSG.HISTORY: {
         // we successfully joined/created a channel — switch to it
         channel = a.channel;

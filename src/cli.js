@@ -27,7 +27,18 @@ function identityFrom(opts) {
 export async function createCommand(opts) {
   const port = Number(opts.port) || 4040;
   const password = opts.password || null;
-  startServer({ port, password });
+  const server = startServer({ port, password });
+  try {
+    await server.ready;
+  } catch (e) {
+    if (e.code === "EADDRINUSE") {
+      console.error(`Port ${port} is already in use — is an office already running?`);
+      console.error(`Try a different port:  office create --port ${port + 1}`);
+    } else {
+      console.error(`Could not start the office: ${e.message}`);
+    }
+    process.exit(1);
+  }
   const ip = lanIp();
   const identity = identityFrom(opts);
   console.log(welcomeBanner({ room: opts.room || "office", joinHint: `office join ${ip}${port !== 4040 ? " --port " + port : ""}`, hosting: true }));

@@ -4,9 +4,10 @@ const HISTORY_CAP = 100;
 export function initialState() {
   return {
     channels: ["#general"],
+    channelPrivate: { "#general": false },
     users: {},
     history: { "#general": [] },
-    statuses: {},
+    seats: {}, // seatNumber -> userId
   };
 }
 
@@ -28,7 +29,11 @@ export function reduce(state, action) {
     case "leave": {
       const users = { ...state.users };
       delete users[action.userId];
-      return { ...state, users };
+      const seats = { ...state.seats };
+      for (const n of Object.keys(seats)) {
+        if (seats[n] === action.userId) delete seats[n];
+      }
+      return { ...state, users, seats };
     }
     case "message": {
       const chan = action.channel;
@@ -53,11 +58,29 @@ export function reduce(state, action) {
         users: { ...state.users, [action.userId]: { ...u, statusText: action.statusText } },
       };
     }
+    case "color": {
+      const u = state.users[action.userId];
+      if (!u) return state;
+      return {
+        ...state,
+        users: { ...state.users, [action.userId]: { ...u, color: action.color } },
+      };
+    }
+    case "seat": {
+      const seats = { ...state.seats };
+      // a user occupies at most one seat
+      for (const n of Object.keys(seats)) {
+        if (seats[n] === action.userId) delete seats[n];
+      }
+      seats[action.seat] = action.userId;
+      return { ...state, seats };
+    }
     case "channel": {
       if (action.action === "create" && !state.channels.includes(action.name)) {
         return {
           ...state,
           channels: [...state.channels, action.name],
+          channelPrivate: { ...state.channelPrivate, [action.name]: !!action.private },
           history: { ...state.history, [action.name]: [] },
         };
       }

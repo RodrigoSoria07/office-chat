@@ -39,8 +39,16 @@ office join 192.168.1.5 --password teamsecret
 
 ## In-app commands
 
-`/join #channel` · `/dm @user msg` · `/status <text>` · `/away` · `/back` ·
-`/who` · `/board` · `/help` · `/quit`
+- **Canales:** `/crear #canal [--privado clave]` · `/join #canal [clave]` · `/canales`
+  - Los canales privados se listan con 🔒 y sus mensajes solo llegan a los miembros.
+- **Mensajes:** escribe normal para el canal actual · `/dm @user msg`
+- **Estado:** `/estado QA|Desarrollo|RYD` (o texto libre) · `/away` · `/back` · `/board`
+- **Color:** `/color azul` (paleta: azul · verde · morado · cyan · amarillo · rosa · naranja · blanco)
+  - Cada persona recibe un color distinto al entrar; con `/color` lo cambias y se guarda.
+- **Mesa de trabajo:** `/mesa` dibuja la estación (6 asientos, 3 arriba / 3 abajo).
+  - El **host queda fijo en el asiento 6** (abajo-derecha, marcado con ★).
+  - `/asiento <1-5>` te mueve a un asiento libre.
+- **Otros:** `/who` · `/help` · `/quit`
 
 ## Set your identity once
 

@@ -7,6 +7,9 @@ export const MSG = Object.freeze({
   PRESENCE: "presence",
   STATUS: "status",
   CHANNEL: "channel",
+  HISTORY: "history",
+  COLOR: "color",
+  SEAT: "seat",
   SYSTEM: "system",
   ERROR: "error",
 });

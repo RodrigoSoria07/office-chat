@@ -1,6 +1,6 @@
 // src/ui/messages.js
 import { highlight } from "cli-highlight";
-import { paint } from "./theme.js";
+import { paint, colorizeBold } from "./theme.js";
 
 export function renderCodeBlocks(text) {
   return text.replace(/```(\w+)?\n([\s\S]*?)```/g, (_m, lang, code) => {
@@ -12,9 +12,9 @@ export function renderCodeBlocks(text) {
   });
 }
 
-export function renderMessageLine({ avatar, name, text }) {
+export function renderMessageLine({ avatar, name, text, color }) {
   const body = renderCodeBlocks(text);
-  return `${avatar}  ${paint.name(name)}  ${body}`;
+  return `${avatar}  ${colorizeBold(name, color)}  ${body}`;
 }
 
 export function renderSystemLine(text) {

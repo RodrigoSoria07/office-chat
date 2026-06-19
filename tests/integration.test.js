@@ -16,6 +16,7 @@ function waitFor(client, predicate, timeout = 2000) {
 describe("integration: relay + clients", () => {
   it("delivers a message from client A to client B", async () => {
     server = startServer({ port: 4055 });
+    await server.ready;
     const url = "ws://127.0.0.1:4055";
 
     const a = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "ana", avatar: "👩‍💻", color: "#D97757" } });
@@ -36,6 +37,7 @@ describe("integration: relay + clients", () => {
 
   it("rejects a client with the wrong password", async () => {
     server = startServer({ port: 4056, password: "secret" });
+    await server.ready;
     const url = "ws://127.0.0.1:4056";
     const c = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "ana", avatar: "👩‍💻", color: "#D97757", password: "wrong" } });
     const gotError = waitFor(c, (m) => m.type === MSG.ERROR);
@@ -43,5 +45,71 @@ describe("integration: relay + clients", () => {
     const err = await gotError;
     expect(err.code).toBe("AUTH");
     c.close();
+  });
+
+  it("rejects ready when the port is already in use", async () => {
+    server = startServer({ port: 4057 });
+    await server.ready;
+    const second = startServer({ port: 4057 });
+    await expect(second.ready).rejects.toMatchObject({ code: "EADDRINUSE" });
+  });
+
+  it("assigns the host seat 6 and the next joiner seat 1", async () => {
+    server = startServer({ port: 4058 });
+    await server.ready;
+    const url = "ws://127.0.0.1:4058";
+
+    const host = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "host", avatar: "👨‍💻", color: "#D97757" } });
+    const wHost = waitFor(host, (m) => m.type === MSG.WELCOME);
+    await host.connect();
+    const hw = await wHost;
+    expect(hw.seats["6"]).toBe(hw.userId); // host at seat 6
+
+    const guest = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "guest", avatar: "👩‍💻", color: "#D97757" } });
+    const wGuest = waitFor(guest, (m) => m.type === MSG.WELCOME);
+    await guest.connect();
+    const gw = await wGuest;
+    expect(gw.seats["1"]).toBe(gw.userId); // first guest at seat 1
+
+    host.close();
+    guest.close();
+  });
+
+  it("keeps private-channel messages to members only", async () => {
+    server = startServer({ port: 4059 });
+    await server.ready;
+    const url = "ws://127.0.0.1:4059";
+
+    const a = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "ana", avatar: "👩‍💻", color: "#D97757" } });
+    const b = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "leo", avatar: "👨‍💻", color: "#D97757" } });
+    const bSeen = [];
+    b.onMessage((m) => bSeen.push(m));
+    await a.connect();
+    await b.connect();
+
+    // ana creates a private channel and waits for the HISTORY (= joined) ack
+    const created = waitFor(a, (m) => m.type === MSG.HISTORY && m.channel === "#secret");
+    a.send({ type: MSG.CHANNEL, action: "create", name: "#secret", private: true, password: "k" });
+    await created;
+
+    a.send({ type: MSG.MESSAGE, channel: "#secret", text: "topsecret" });
+
+    // leo is NOT a member — must never see it. Give it time to (not) arrive.
+    await new Promise((r) => setTimeout(r, 150));
+    expect(bSeen.some((m) => m.type === MSG.MESSAGE && m.text === "topsecret")).toBe(false);
+
+    // wrong key is rejected
+    const denied = waitFor(b, (m) => m.type === MSG.ERROR && m.code === "AUTH");
+    b.send({ type: MSG.CHANNEL, action: "join", name: "#secret", key: "wrong" });
+    await denied;
+
+    // correct key lets leo in and replays the backlog
+    const hist = waitFor(b, (m) => m.type === MSG.HISTORY && m.channel === "#secret");
+    b.send({ type: MSG.CHANNEL, action: "join", name: "#secret", key: "k" });
+    const h = await hist;
+    expect(h.history.some((m) => m.text === "topsecret")).toBe(true);
+
+    a.close();
+    b.close();
   });
 });

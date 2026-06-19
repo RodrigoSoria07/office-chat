@@ -20,6 +20,10 @@ export const paint = {
   away: (s) => chalk.gray(s),
 };
 
+// Per-user color helpers (fall back to the brand accent if no color set).
+export const colorize = (s, hex) => chalk.hex(hex || ACCENT)(s);
+export const colorizeBold = (s, hex) => chalk.hex(hex || ACCENT).bold(s);
+
 // blessed border style for rounded panels
 export const border = { type: "line" };
 export const borderStyle = { fg: ACCENT };

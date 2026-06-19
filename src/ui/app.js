@@ -187,11 +187,16 @@ export function runApp({ transport, identity }) {
         }
         break;
       }
+      case "clear":
+      case "limpiar":
+        messages.setContent("");
+        appendLine(paint.system("chat limpiado"));
+        break;
       case "who":   appendLine(Object.values(state.users).map((u) => u.name).join(", ")); break;
       case "board": appendLine(Object.values(state.users).map((u) => `${u.name}: ${u.statusText || "—"}`).join("\n")); break;
       case "help":  appendLine(paint.system(
         "/crear #ch [--privado clave] · /join #ch [clave] · /canales · /dm @user msg · " +
-        "/estado QA|Desarrollo|RYD · /color azul · /mesa · /asiento <1-5> · /away · /back · /who · /board · /quit"
+        "/estado QA|Desarrollo|RYD · /color azul · /mesa · /asiento <1-5> · /away · /back · /who · /board · /clear · /quit"
       )); break;
       case "salir":
       case "quit":  cleanup(); break;
@@ -206,7 +211,16 @@ export function runApp({ transport, identity }) {
   }
 
   input.key(["enter"], () => handleSubmit(input.getValue()));
-  screen.key(["C-c"], cleanup);
+
+  // Ctrl+C twice to exit: the first press warns, the second (within 1.5s) quits.
+  let lastCtrlC = 0;
+  screen.key(["C-c"], () => {
+    const now = Date.now();
+    if (now - lastCtrlC < 1500) { cleanup(); return; }
+    lastCtrlC = now;
+    appendLine(paint.system("Presiona Ctrl+C de nuevo para salir (o /quit)"));
+  });
+
   input.focus();
   redrawSidebar();
   screen.render();

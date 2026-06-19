@@ -48,7 +48,8 @@ office join 192.168.1.5 --password teamsecret
 - **Mesa de trabajo:** `/mesa` dibuja la estación (6 asientos, 3 arriba / 3 abajo).
   - El **host queda fijo en el asiento 6** (abajo-derecha, marcado con ★).
   - `/asiento <1-5>` te mueve a un asiento libre.
-- **Otros:** `/who` · `/help` · `/quit`
+- **Otros:** `/who` · `/clear` (o `/limpiar`) · `/help` · `/quit`
+- **Salir:** `/quit` · o **Ctrl+C dos veces** (el primero avisa, el segundo sale).
 
 ## Set your identity once
 

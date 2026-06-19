@@ -10,6 +10,25 @@ import { resolveColor, colorNames } from "../colors.js";
 import { stateNames, normalizeState } from "../states.js";
 import { writeConfig } from "../config.js";
 
+// Command catalog used for the suggestion bar and /help.
+const COMMANDS = [
+  { name: "estado",  desc: "en qué trabajas",        usage: "/estado <estado o tarea>" },
+  { name: "crear",   desc: "crear canal",            usage: "/crear #canal [--privado clave]" },
+  { name: "join",    desc: "entrar a un canal",      usage: "/join #canal [clave]" },
+  { name: "canales", desc: "ver canales",            usage: "/canales" },
+  { name: "dm",      desc: "mensaje directo",        usage: "/dm @usuario mensaje" },
+  { name: "color",   desc: "cambiar tu color",       usage: "/color <color>" },
+  { name: "mesa",    desc: "ver la mesa",            usage: "/mesa" },
+  { name: "asiento", desc: "cambiar de asiento",     usage: "/asiento <1-5>" },
+  { name: "away",    desc: "marcarte ausente",       usage: "/away" },
+  { name: "back",    desc: "volver disponible",      usage: "/back" },
+  { name: "board",   desc: "estados de todos",       usage: "/board" },
+  { name: "who",     desc: "quién está conectado",   usage: "/who" },
+  { name: "clear",   desc: "limpiar el chat",        usage: "/clear" },
+  { name: "help",    desc: "ayuda",                  usage: "/help" },
+  { name: "quit",    desc: "salir",                  usage: "/quit" },
+];
+
 export function runApp({ transport, identity }) {
   let state = initialState();
   let me = null;             // my userId, set on welcome
@@ -19,17 +38,23 @@ export function runApp({ transport, identity }) {
   const screen = blessed.screen({ smartCSR: true, title: "Office", fullUnicode: true });
 
   const messages = blessed.box({
-    top: 0, left: 0, right: 28, bottom: 3,
+    top: 0, left: 0, right: 28, bottom: 4,
     label: ` ${glyph.logo} Office · ${channel} `,
     border: "line", style: { border: { fg: ACCENT } },
     scrollable: true, alwaysScroll: true, tags: false, padding: { left: 1, right: 1 },
   });
 
   const sidebar = blessed.box({
-    top: 0, right: 0, width: 28, bottom: 3,
+    top: 0, right: 0, width: 28, bottom: 4,
     label: ` ${glyph.logo} ${roomName} `,
     border: "line", style: { border: { fg: ACCENT } },
     padding: { left: 1 },
+  });
+
+  // Thin suggestion/help bar that updates as you type.
+  const hint = blessed.box({
+    bottom: 3, left: 0, right: 0, height: 1,
+    tags: false, padding: { left: 1 },
   });
 
   const input = blessed.textbox({
@@ -41,6 +66,7 @@ export function runApp({ transport, identity }) {
 
   screen.append(messages);
   screen.append(sidebar);
+  screen.append(hint);
   screen.append(input);
 
   function setChannelLabel() {
@@ -60,6 +86,42 @@ export function runApp({ transport, identity }) {
     const u = state.users[from];
     return renderMessageLine({ avatar: u?.avatar ?? "🧑", name: u?.name ?? "?", text, color: u?.color });
   }
+  function myStatus() {
+    return (me && state.users[me]?.statusText) || "";
+  }
+  // Suggestion bar: reacts to what's currently typed in the input.
+  function updateHint(raw) {
+    const v = (raw || "").trim();
+    let out;
+    if (v === "") {
+      out = myStatus()
+        ? paint.dim("Escribe / para ver comandos · Enter para enviar")
+        : paint.accent("➤ Aún no dices en qué trabajas: escribe  /estado <lo que haces>  (ej: /estado Desarrollo: login)");
+    } else if (v.startsWith("/")) {
+      const sp = v.indexOf(" ");
+      if (sp === -1) {
+        const q = v.slice(1).toLowerCase();
+        const matches = COMMANDS.filter((c) => c.name.startsWith(q)).slice(0, 8);
+        out = matches.length
+          ? matches.map((c) => paint.accent("/" + c.name) + " " + paint.dim(c.desc)).join("   ")
+          : paint.dim("sin coincidencias · /help");
+      } else {
+        const cmd = v.slice(1, sp);
+        if (cmd === "estado" || cmd === "status") {
+          out = paint.dim("estados: ") + stateNames().join(" · ") + paint.dim("   — o escribe en qué trabajas");
+        } else if (cmd === "color") {
+          out = paint.dim("colores: ") + colorNames().join(" · ");
+        } else {
+          const c = COMMANDS.find((x) => x.name === cmd);
+          out = c ? paint.dim(c.usage) : "";
+        }
+      }
+    } else {
+      out = paint.dim(`${channel} · Enter para enviar · / para comandos`);
+    }
+    hint.setContent(out);
+    screen.render();
+  }
 
   transport.onMessage((a) => {
     switch (a.type) {
@@ -77,6 +139,11 @@ export function runApp({ transport, identity }) {
         setChannelLabel();
         for (const m of state.history[channel] ?? []) appendLine(lineFor(m.from, m.text));
         redrawSidebar();
+        if (!myStatus()) {
+          appendLine(paint.accent(`➤ ${identity.name}, cuéntale al equipo en qué estás trabajando:`));
+          appendLine(paint.accent(`  escribe  /estado <lo que haces>  (estados: ${stateNames().join(" · ")})`));
+        }
+        updateHint("");
         break;
       case MSG.MESSAGE: {
         state = reduce(state, a);
@@ -110,6 +177,7 @@ export function runApp({ transport, identity }) {
       case MSG.CHANNEL:
         state = reduce(state, a);
         redrawSidebar();
+        if (a.type === MSG.STATUS && a.userId === me) updateHint("");
         break;
       case MSG.SYSTEM:
         appendLine(renderSystemLine(a.text));
@@ -134,6 +202,7 @@ export function runApp({ transport, identity }) {
       runCommand(parsed.name, parsed.arg);
     }
     input.focus();
+    updateHint("");
     screen.render();
   }
 
@@ -217,6 +286,8 @@ export function runApp({ transport, identity }) {
   }
 
   input.key(["enter"], () => handleSubmit(input.getValue()));
+  // Update the suggestion bar as the user types (value updates just after the key).
+  input.on("keypress", () => setImmediate(() => updateHint(input.getValue())));
 
   // Ctrl+C twice to exit: the first press warns, the second (within 1.5s) quits.
   let lastCtrlC = 0;
@@ -229,5 +300,6 @@ export function runApp({ transport, identity }) {
 
   input.focus();
   redrawSidebar();
+  updateHint("");
   screen.render();
 }

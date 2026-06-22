@@ -72,14 +72,14 @@ describe("table render", () => {
     expect(out).toContain("ana");
     expect(out).toContain("★");      // host marker on seat 6
     expect(out).toContain("vacío");  // unoccupied seats
-    expect(out).toContain("MESA");
+    expect(out).toContain("ESTACIÓN");
   });
 
   it("renders the compact sidebar table with the seated avatar and legend", () => {
     let s = reduce(initialState(), { type: "join", userId: "u1", name: "ana", avatar: "👩‍💻", color: "#5B9BD5" });
     s = reduce(s, { type: "seat", userId: "u1", seat: 6 });
     const out = renderTableSidebar(s);
-    expect(out).toContain("MESA");
+    expect(out).toContain("ESTACIÓN");
     expect(out).toContain("👩‍💻");   // the emoji sits in its seat
     expect(out).toContain("ana");   // legend
     expect(out).toContain("★");     // host marker

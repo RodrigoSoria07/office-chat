@@ -25,7 +25,7 @@ export function renderTable(state) {
   const top = [1, 2, 3].map((n) => seatCell(n, state, hostId)).join("  ");
   const bottom = [4, 5, 6].map((n) => seatCell(n, state, hostId)).join("  ");
   const title = paint.accent(`${glyph.logo} Estación de trabajo  (★ = host, asiento 6)`);
-  const bar = paint.accent("════════════ MESA ════════════");
+  const bar = paint.accent("═══════ ESTACIÓN DE TRABAJO ═══════");
   return [
     "",
     title,
@@ -52,7 +52,7 @@ export function renderTableSidebar(state) {
   const lines = [
     paint.dim("  1   2   3"),
     " " + [1, 2, 3].map(slot).join(" "),
-    paint.accent(" ══ MESA ══"),
+    paint.accent(" ══ ESTACIÓN ══"),
     " " + [4, 5, 6].map(slot).join(" "),
     paint.dim("  4   5   6"),
     "",

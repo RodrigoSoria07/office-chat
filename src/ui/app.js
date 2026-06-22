@@ -18,7 +18,7 @@ const COMMANDS = [
   { name: "canales", desc: "ver canales",            usage: "/canales" },
   { name: "dm",      desc: "mensaje directo",        usage: "/dm @usuario mensaje" },
   { name: "color",   desc: "cambiar tu color",       usage: "/color <color>" },
-  { name: "mesa",    desc: "ver la mesa",            usage: "/mesa" },
+  { name: "estacion", desc: "ver estaciones de trabajo", usage: "/estacion" },
   { name: "asiento", desc: "cambiar de asiento",     usage: "/asiento <1-5>" },
   { name: "away",    desc: "marcarte ausente",       usage: "/away" },
   { name: "back",    desc: "volver disponible",      usage: "/back" },
@@ -273,7 +273,10 @@ export function runApp({ transport, identity }) {
         appendLine(paint.system(`canales: ${list}`));
         break;
       }
-      case "mesa":    appendLine(renderTable(state)); break;
+      case "mesa":
+      case "estacion":
+        appendLine(renderTable(state));
+        break;
       case "asiento": {
         const n = Number(arg);
         if (!Number.isInteger(n)) { appendLine(paint.system("uso: /asiento <1-5>")); break; }
@@ -304,7 +307,7 @@ export function runApp({ transport, identity }) {
       case "board": appendLine(Object.values(state.users).map((u) => `${u.name}: ${u.statusText || "—"}`).join("\n")); break;
       case "help":  appendLine(paint.system(
         "/crear #ch [--privado clave] · /join #ch [clave] · /canales · /dm @user msg · " +
-        "/estado QA|Desarrollo|RYD · /color azul · /mesa · /asiento <1-5> · /away · /back · /who · /board · /kick @user (host) · /clear · /quit"
+        "/estado QA|Desarrollo|RYD · /color azul · /estacion · /asiento <1-5> · /away · /back · /who · /board · /kick @user (host) · /clear · /quit"
       )); break;
       case "salir":
       case "quit":  cleanup(); break;

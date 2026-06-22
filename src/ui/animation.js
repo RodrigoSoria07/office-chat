@@ -18,6 +18,14 @@ const DARK_GREEN = "#008F11";   // Classic dark matrix green
 const DIM_GREEN = "#003B00";    // Very dark background green
 
 export async function runStartupAnimation(room, isHost, identityName = "ANONYMOUS") {
+  // The intro writes raw ANSI/truecolor escapes *before* blessed enables VT
+  // processing. On terminals where VT isn't active yet (or output isn't a TTY,
+  // or color is unsupported) those escapes print as garbage ("0C0C1C..."). It's
+  // purely cosmetic, so skip it cleanly in those cases or when opted out.
+  if (!process.stdout.isTTY || chalk.level === 0 || process.env.OFFICE_NO_ANIM) {
+    return;
+  }
+
   const width = Math.min(process.stdout.columns || 80, 80);
   const height = Math.min(process.stdout.rows || 24, 16);
 

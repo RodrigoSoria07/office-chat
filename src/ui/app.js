@@ -62,7 +62,10 @@ export function runApp({ transport, identity }) {
     bottom: 0, left: 0, right: 0, height: 3,
     label: ` ${glyph.logo} ${identity.name} ${glyph.prompt} `,
     border: "line", style: { border: { fg: ACCENT } },
-    inputOnFocus: true, padding: { left: 1 },
+    padding: { left: 1 },
+    keys: true,
+    mouse: true,
+    inputOnFocus: true,
   });
 
   screen.append(messages);
@@ -204,16 +207,30 @@ export function runApp({ transport, identity }) {
   });
 
   function handleSubmit(value) {
-    input.clearValue();
+    if (!value || !value.trim()) {
+      // Si estaba vacío, limpiamos y nos aseguramos de enfocar de nuevo
+      input.value = "";
+      input.clearValue();
+      screen.render();
+      input.focus();
+      return;
+    }
+
+    // 1. Procesamos el comando o mensaje con el valor original guardado
     const parsed = parseInput(value || "");
     if (parsed.kind === "message" && parsed.text) {
       transport.send({ type: MSG.MESSAGE, channel, text: parsed.text });
     } else if (parsed.kind === "command") {
       runCommand(parsed.name, parsed.arg);
     }
-    input.focus();
-    updateHint("");
+
+    // 2. Limpieza oficial y reactivación del teclado
+    input.value = "";
+    input.clearValue();
     screen.render();
+    
+    // Al enfocar, inputOnFocus inicia automáticamente el modo de edición limpio
+    input.focus(); 
   }
 
   function runCommand(name, arg) {
@@ -302,7 +319,13 @@ export function runApp({ transport, identity }) {
     process.exit(0);
   }
 
-  input.key(["enter"], () => handleSubmit(input.getValue()));
+  input.on("submit", (value) => {
+    handleSubmit(value);
+  });
+
+  input.on("cancel", () => {
+    input.focus();
+  });
   // Refresh the suggestion bar from a background timer (NOT a keypress listener),
   // and never render here — the textbox renders itself per key and paints the
   // updated hint. Hooking the textbox's keypress / rendering on each key made

@@ -9,14 +9,14 @@ program.command("create")
   .description("Create and host an office")
   .option("--name <name>").option("--avatar <emoji>").option("--port <port>")
   .option("--password <password>").option("--room <room>")
-  .option("--anim", "play the cyberpunk startup animation (off by default)")
+  .option("--no-anim", "skip the startup animation")
   .action(createCommand);
 
 program.command("join <host>")
   .description("Join an existing office by host IP")
   .option("--name <name>").option("--avatar <emoji>").option("--port <port>")
   .option("--password <password>")
-  .option("--anim", "play the cyberpunk startup animation (off by default)")
+  .option("--no-anim", "skip the startup animation")
   .action(joinCommand);
 
 program.command("config")

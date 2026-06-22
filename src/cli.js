@@ -83,7 +83,7 @@ export async function createCommand(opts) {
   const ip = lanIp();
   const identity = identityFrom({ ...opts, name });
   const joinHint = `office join ${ip}${port !== 4040 ? " --port " + port : ""}`;
-  if (opts.anim !== false) await runStartupAnimation(room, true, identity.name);
+  if (opts.anim || process.env.OFFICE_ANIM) await runStartupAnimation(room, true, identity.name);
   console.log(welcomeBanner({ room, joinHint, hosting: true }));
   await joinUrl(`ws://127.0.0.1:${port}`, identity, password, { share: joinHint });
 }
@@ -99,7 +99,7 @@ export async function joinCommand(host, opts) {
   }
 
   const identity = identityFrom({ ...opts, name });
-  if (opts.anim !== false) await runStartupAnimation(host, false, identity.name);
+  if (opts.anim || process.env.OFFICE_ANIM) await runStartupAnimation(host, false, identity.name);
   console.log(welcomeBanner({ room: host, joinHint: null, hosting: false }));
   await joinUrl(`ws://${host}:${port}`, identity, opts.password || null);
 }

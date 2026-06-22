@@ -5,7 +5,11 @@ import { initialState, reduce } from "../state.js";
 import { BRAND, rotationColor } from "../colors.js";
 
 export function startServer({ port = 4040, password = null, room = "Oficina" } = {}) {
-  const wss = new WebSocketServer({ port });
+  // Bind explicitly to all IPv4 interfaces. With no host, Node may bind IPv6
+  // (`::`) only, so the host connecting to its own server at 127.0.0.1 (IPv4)
+  // can fail to connect on some Windows setups — the app then hangs right after
+  // startup. 0.0.0.0 covers the host's localhost and LAN peers (which use IPv4).
+  const wss = new WebSocketServer({ port, host: "0.0.0.0" });
   let state = initialState();
   const sockets = new Map();          // userId -> ws
   const channelPasswords = new Map(); // channelName -> password (server-only, never broadcast)

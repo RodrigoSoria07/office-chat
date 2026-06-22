@@ -8,6 +8,7 @@ import { isValidAvatar } from "./avatars.js";
 import { MSG } from "./protocol.js";
 import { welcomeBanner } from "./ui/banner.js";
 import { runApp } from "./ui/app.js";
+import { runStartupAnimation } from "./ui/animation.js";
 
 function lanIp() {
   for (const list of Object.values(networkInterfaces())) {
@@ -67,6 +68,7 @@ export async function createCommand(opts) {
   }
   const ip = lanIp();
   const identity = identityFrom({ ...opts, name });
+  await runStartupAnimation(room, true, identity.name);
   console.log(welcomeBanner({ room, joinHint: `office join ${ip}${port !== 4040 ? " --port " + port : ""}`, hosting: true }));
   await joinUrl(`ws://127.0.0.1:${port}`, identity, password);
 }
@@ -82,6 +84,7 @@ export async function joinCommand(host, opts) {
   }
 
   const identity = identityFrom({ ...opts, name });
+  await runStartupAnimation(host, false, identity.name);
   console.log(welcomeBanner({ room: host, joinHint: null, hosting: false }));
   await joinUrl(`ws://${host}:${port}`, identity, opts.password || null);
 }

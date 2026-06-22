@@ -10,6 +10,7 @@ program.command("create")
   .option("--name <name>").option("--avatar <emoji>").option("--port <port>")
   .option("--password <password>").option("--room <room>")
   .option("--no-anim", "skip the startup animation")
+  .option("--tunnel", "expose the office over the internet via cloudflared")
   .action(createCommand);
 
 program.command("join <host>")

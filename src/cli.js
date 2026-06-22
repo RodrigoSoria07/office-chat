@@ -1,6 +1,7 @@
 // src/cli.js
 import { networkInterfaces } from "node:os";
 import { createInterface } from "node:readline/promises";
+import { spawn } from "node:child_process";
 import { startServer } from "./transport/lanServer.js";
 import { createTransport } from "./transport/index.js";
 import { readConfig, writeConfig } from "./config.js";
@@ -17,6 +18,32 @@ function lanIp() {
     }
   }
   return "127.0.0.1";
+}
+
+// Start a cloudflared "quick tunnel" exposing the local office to the internet,
+// and resolve with the public https URL it prints. The cloudflared process keeps
+// running for the session and is killed when this process exits. Rejects if
+// cloudflared isn't installed (ENOENT) or no URL appears within the timeout.
+function startTunnel(port) {
+  return new Promise((resolve, reject) => {
+    const cf = spawn("cloudflared", ["tunnel", "--url", `http://localhost:${port}`], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    cf.on("error", reject); // e.g. ENOENT when cloudflared is not on PATH
+    process.on("exit", () => { try { cf.kill(); } catch { /* ignore */ } });
+
+    let done = false;
+    const onData = (buf) => {
+      if (done) return;
+      const m = String(buf).match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/i);
+      if (m) { done = true; clearTimeout(timer); resolve(m[0]); }
+    };
+    cf.stdout.on("data", onData);
+    cf.stderr.on("data", onData);
+    const timer = setTimeout(() => {
+      if (!done) { done = true; reject(new Error("no llegó la URL del túnel a tiempo")); }
+    }, 20000);
+  });
 }
 
 function identityFrom(opts) {
@@ -82,15 +109,38 @@ export async function createCommand(opts) {
 
   const ip = lanIp();
   const identity = identityFrom({ ...opts, name });
-  const joinHint = `office join ${ip}${port !== 4040 ? " --port " + port : ""}`;
+  let joinHint = `office join ${ip}${port !== 4040 ? " --port " + port : ""}`;
+
+  // --tunnel: expose the office over the internet so people can join from any
+  // network (not just the LAN). Falls back to LAN if cloudflared isn't present.
+  if (opts.tunnel) {
+    try {
+      const pub = await startTunnel(port);
+      joinHint = `office join ${pub.replace(/^https/i, "wss")}`;
+    } catch (e) {
+      console.error(`No pude abrir el túnel (${e.message}).`);
+      console.error(`Instalá cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/`);
+      console.error(`Sigo en modo LAN por ahora.`);
+    }
+  }
+
   if (opts.anim !== false) await runStartupAnimation(room, true, identity.name);
   console.log(welcomeBanner({ room, joinHint, hosting: true }));
   await joinUrl(`ws://127.0.0.1:${port}`, identity, password, { share: joinHint });
 }
 
-export async function joinCommand(host, opts) {
+// Build the WebSocket URL from whatever the user passed as <host>:
+//   - a full ws:// or wss:// URL  -> used as-is (e.g. a cloudflared/ngrok tunnel)
+//   - a full http:// or https:// URL -> scheme swapped to ws:// / wss://
+//   - a bare host or host:port -> ws://host:port (LAN use)
+function resolveJoinUrl(host, opts) {
+  if (/^wss?:\/\//i.test(host)) return host;
+  if (/^https?:\/\//i.test(host)) return host.replace(/^http(s?):\/\//i, "ws$1://");
   const port = Number(opts.port) || 4040;
+  return `ws://${host}:${port}`;
+}
 
+export async function joinCommand(host, opts) {
   // Ask the person their name unless they passed --name.
   let name = opts.name;
   if (!name) {
@@ -98,10 +148,11 @@ export async function joinCommand(host, opts) {
     name = a.name;
   }
 
+  const url = resolveJoinUrl(host, opts);
   const identity = identityFrom({ ...opts, name });
   if (opts.anim !== false) await runStartupAnimation(host, false, identity.name);
   console.log(welcomeBanner({ room: host, joinHint: null, hosting: false }));
-  await joinUrl(`ws://${host}:${port}`, identity, opts.password || null);
+  await joinUrl(url, identity, opts.password || null);
 }
 
 async function joinUrl(url, identity, password, extra = {}) {

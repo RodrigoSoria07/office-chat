@@ -38,7 +38,7 @@ async function prompt(questions) {
 }
 
 export async function createCommand(opts) {
-  const port = Number(opts.port) || 4040;
+  const requestedPort = Number(opts.port) || 4040;
   const password = opts.password || null;
 
   // The host gives their name and names the office (via flags or prompts).
@@ -54,23 +54,38 @@ export async function createCommand(opts) {
   }
   if (!room) room = "Oficina";
 
-  const server = startServer({ port, password, room });
-  try {
-    await server.ready;
-  } catch (e) {
-    if (e.code === "EADDRINUSE") {
-      console.error(`Port ${port} is already in use — is an office already running?`);
-      console.error(`Try a different port:  office create --port ${port + 1}`);
-    } else {
-      console.error(`Could not start the office: ${e.message}`);
+  // Bind the server; if the port is busy, walk forward until we find a free one.
+  let port = requestedPort;
+  const MAX_TRIES = 20;
+  for (let i = 0; ; i++) {
+    const server = startServer({ port, password, room });
+    try {
+      await server.ready;
+      break; // bound successfully
+    } catch (e) {
+      await server.close().catch(() => {});
+      if (e.code === "EADDRINUSE" && i < MAX_TRIES - 1) {
+        port++;
+        continue;
+      }
+      if (e.code === "EADDRINUSE") {
+        console.error(`No encontré un puerto libre entre ${requestedPort} y ${port}.`);
+      } else {
+        console.error(`Could not start the office: ${e.message}`);
+      }
+      process.exit(1);
     }
-    process.exit(1);
   }
+  if (port !== requestedPort) {
+    console.log(`El puerto ${requestedPort} estaba ocupado — usando el ${port}.`);
+  }
+
   const ip = lanIp();
   const identity = identityFrom({ ...opts, name });
+  const joinHint = `office join ${ip}${port !== 4040 ? " --port " + port : ""}`;
   await runStartupAnimation(room, true, identity.name);
-  console.log(welcomeBanner({ room, joinHint: `office join ${ip}${port !== 4040 ? " --port " + port : ""}`, hosting: true }));
-  await joinUrl(`ws://127.0.0.1:${port}`, identity, password);
+  console.log(welcomeBanner({ room, joinHint, hosting: true }));
+  await joinUrl(`ws://127.0.0.1:${port}`, identity, password, { share: joinHint });
 }
 
 export async function joinCommand(host, opts) {
@@ -89,7 +104,7 @@ export async function joinCommand(host, opts) {
   await joinUrl(`ws://${host}:${port}`, identity, opts.password || null);
 }
 
-async function joinUrl(url, identity, password) {
+async function joinUrl(url, identity, password, extra = {}) {
   const transport = createTransport("lan", {
     url,
     joinMessage: { type: MSG.JOIN, name: identity.name, avatar: identity.avatar, color: identity.color, password },
@@ -100,7 +115,7 @@ async function joinUrl(url, identity, password) {
     console.error(`Could not reach the office at ${url}. Is the host running?`);
     process.exit(1);
   }
-  runApp({ transport, identity });
+  runApp({ transport, identity, ...extra });
 }
 
 export function configCommand(opts) {

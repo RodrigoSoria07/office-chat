@@ -17,6 +17,7 @@ export function startServer({ port = 4040, password = null, room = "Oficina" } =
   let counter = 0;
   let joinIndex = 0;                  // for distinct default colors
   let hostId = null;                  // first joiner is the host (seat 6)
+  let poll = null;                    // active poll: { question, options, votes, by }
   let monotonicTs = 0;
   const nextTs = () => ++monotonicTs;
 
@@ -121,6 +122,10 @@ export function startServer({ port = 4040, password = null, room = "Oficina" } =
         const stamped = { type: MSG.COLOR, userId, color: action.color };
         state = reduce(state, stamped);
         broadcast(stamped);
+      } else if (action.type === MSG.AVATAR) {
+        const stamped = { type: MSG.AVATAR, userId, avatar: action.avatar };
+        state = reduce(state, stamped);
+        broadcast(stamped);
       } else if (action.type === MSG.SEAT) {
         const n = Number(action.seat);
         if (!Number.isInteger(n) || n < 1 || n > 6) {
@@ -178,6 +183,30 @@ export function startServer({ port = 4040, password = null, room = "Oficina" } =
         }
         members(name).add(userId);
         ws.send(encode({ type: MSG.HISTORY, channel: name, history: state.history[name] ?? [] }));
+      } else if (action.type === MSG.POLL) {
+        const question = String(action.question || "").trim();
+        const options = (action.options || []).map((o) => String(o).trim()).filter(Boolean).slice(0, 6);
+        if (!question || options.length < 2) {
+          ws.send(encode({ type: MSG.ERROR, code: "POLL", message: "uso: /poll pregunta | opción1 | opción2" }));
+          return;
+        }
+        poll = { question, options, votes: {}, by: state.users[userId]?.name ?? "?" };
+        broadcast({ type: MSG.POLL, event: "new", question, options, by: poll.by });
+      } else if (action.type === MSG.VOTE) {
+        if (!poll) { ws.send(encode({ type: MSG.ERROR, code: "VOTE", message: "no hay encuesta activa" })); return; }
+        const n = Number(action.vote);
+        if (!Number.isInteger(n) || n < 1 || n > poll.options.length) {
+          ws.send(encode({ type: MSG.ERROR, code: "VOTE", message: `voto inválido (1-${poll.options.length})` }));
+          return;
+        }
+        poll.votes[userId] = n - 1;
+        const tally = poll.options.map((_, i) => Object.values(poll.votes).filter((v) => v === i).length);
+        broadcast({
+          type: MSG.POLL, event: "update",
+          question: poll.question, options: poll.options, tally,
+          total: Object.keys(poll.votes).length,
+          voter: state.users[userId]?.name ?? "?", choice: poll.options[n - 1],
+        });
       }
     });
 

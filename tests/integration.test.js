@@ -101,6 +101,40 @@ describe("integration: relay + clients", () => {
     host.close();
   });
 
+  it("broadcasts a poll and tallies votes to everyone", async () => {
+    server = startServer({ port: 4061 });
+    await server.ready;
+    const url = "ws://127.0.0.1:4061";
+
+    const a = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "ana", avatar: "👨‍💻", color: "#D97757" } });
+    const b = createLanClient({ url, joinMessage: { type: MSG.JOIN, name: "leo", avatar: "👨‍💻", color: "#D97757" } });
+    await a.connect();
+    await b.connect();
+
+    // ana creates a poll -> both see the "new" event
+    const bNew = waitFor(b, (m) => m.type === MSG.POLL && m.event === "new");
+    a.send({ type: MSG.POLL, question: "¿Deploy hoy?", options: ["Sí", "No", "Mañana"] });
+    const np = await bNew;
+    expect(np.options).toEqual(["Sí", "No", "Mañana"]);
+    expect(np.by).toBe("ana");
+
+    // both vote -> tally updates broadcast to everyone
+    const upd = waitFor(a, (m) => m.type === MSG.POLL && m.event === "update" && m.total === 2);
+    a.send({ type: MSG.VOTE, vote: 1 }); // Sí
+    b.send({ type: MSG.VOTE, vote: 1 }); // Sí
+    const u = await upd;
+    expect(u.tally[0]).toBe(2); // two votes for "Sí"
+    expect(u.total).toBe(2);
+
+    // invalid vote is rejected
+    const err = waitFor(b, (m) => m.type === MSG.ERROR && m.code === "VOTE");
+    b.send({ type: MSG.VOTE, vote: 9 });
+    expect((await err).message).toMatch(/inválido/i);
+
+    a.close();
+    b.close();
+  });
+
   it("keeps private-channel messages to members only", async () => {
     server = startServer({ port: 4059 });
     await server.ready;

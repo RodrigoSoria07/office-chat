@@ -14,6 +14,9 @@ export const MSG = Object.freeze({
   KICK: "kick",
   SYSTEM: "system",
   ERROR: "error",
+  POLL: "poll",
+  VOTE: "vote",
+  AVATAR: "avatar",
 });
 
 const TYPES = new Set(Object.values(MSG));

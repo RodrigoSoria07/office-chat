@@ -66,6 +66,14 @@ export function reduce(state, action) {
         users: { ...state.users, [action.userId]: { ...u, color: action.color } },
       };
     }
+    case "avatar": {
+      const u = state.users[action.userId];
+      if (!u) return state;
+      return {
+        ...state,
+        users: { ...state.users, [action.userId]: { ...u, avatar: action.avatar } },
+      };
+    }
     case "seat": {
       const seats = { ...state.seats };
       // a user occupies at most one seat

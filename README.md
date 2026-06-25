@@ -1,151 +1,151 @@
-# Office ✺ — chat de oficina en la terminal
+# Office ✺ — terminal office chat
 
-Un "oficina virtual" en tiempo real dentro de tu terminal. Una persona **crea** la
-oficina (host) y las demás **se unen** desde la misma red. Incluye canales, mensajes
-directos, estados, colores por persona y una mesa de trabajo con asientos.
+A real-time "virtual office" inside your terminal. One person **creates** the office (host) and
+the others **join** from the same network. It includes channels, direct messages, statuses,
+per-person colors, and a work table with seats.
 
 ---
 
-## 1. Instalación
+## 1. Install
 
-Necesitas **Node.js** instalado (versión 18 o superior). Compruébalo con `node -v`.
+You need **Node.js** installed (version 18 or higher). Check it with `node -v`.
 
-**Opción A — desde GitHub (recomendada, no necesitas la carpeta):**
+**Option A — from GitHub (recommended, no folder needed):**
 
 ```
 npm install -g github:RodrigoSoria07/office-chat
 ```
 
-Eso deja el comando **`office`** disponible en cualquier terminal (CMD/PowerShell).
+That makes the **`office`** command available in any terminal (CMD/PowerShell).
 
-**Opción B — desde la carpeta del proyecto:**
+**Option B — from the project folder:**
 
 ```
 npm install
 npm install -g .
 ```
 
-> Si no quieres instalarlo global, también puedes correrlo con
-> `node bin/office.js <comando>` desde la carpeta.
+> If you don't want a global install, you can also run it with
+> `node bin/office.js <command>` from the folder.
 
 ---
 
-## 2. Cómo conectarse
+## 2. How to connect
 
-Todos deben estar en la **misma red** (mismo Wi-Fi / red de la oficina).
+Everyone must be on the **same network** (same Wi-Fi / office network).
 
-### El host crea la oficina
+### The host creates the office
 
 ```
 office create
 ```
 
-- Te preguntará el **nombre de la oficina** (o pásalo directo con `--room "Mi Oficina"`).
-- Al iniciar, muestra una línea como:
+- It asks for the **office name** (or pass it directly with `--room "My Office"`).
+- On start, it prints a line like:
   `Share this:  office join 192.168.1.5`
-  → esa **IP** es la que comparten los demás para entrar.
+  → that **IP** is what others use to join.
 
-### Los demás se unen
+### The others join
 
 ```
 office join 192.168.1.5
 ```
 
-(Reemplaza `192.168.1.5` por la IP que mostró el host.)
+(Replace `192.168.1.5` with the IP the host showed.)
 
-### Oficina con contraseña (opcional)
+### Password-protected office (optional)
 
 ```
-office create --password claveSecreta
-office join 192.168.1.5 --password claveSecreta
+office create --password secretKey
+office join 192.168.1.5 --password secretKey
 ```
 
-### ¿No sabes tu IP? (host)
+### Don't know your IP? (host)
 
-El host la verá al crear la oficina. Si la necesitas a mano, en Windows:
-`ipconfig` → busca **"Dirección IPv4"** (algo como `192.168.x.x`).
+The host sees it when creating the office. If you need it by hand, on Windows:
+`ipconfig` → look for **"IPv4 Address"** (something like `192.168.x.x`).
 
-### Tu identidad
+### Your identity
 
-Puedes pasar tu nombre y avatar al conectar:
+You can pass your name and avatar when connecting:
 
 ```
 office join 192.168.1.5 --name Ana --avatar 👩‍💻
 ```
 
-O guardarlos una sola vez para que se usen siempre:
+Or save them once so they're always used:
 
 ```
-office config --name Ana --avatar 👩‍💻 --color azul
+office config --name Ana --avatar 👩‍💻 --color blue
 ```
 
-Avatares disponibles (solo personas): 👨‍💻 👩‍💻 👨 👩 🧑
+Available avatars (people only): 👨‍💻 👩‍💻 👨 👩 🧑
 
 ---
 
-## 3. Comandos disponibles (dentro de la app)
+## 3. Available commands (inside the app)
 
-Escribe normal y presiona Enter para mandar un mensaje al canal actual.
-Los comandos empiezan con `/`:
+Type normally and press Enter to send a message to the current channel.
+Commands start with `/`:
 
-### Canales
-| Comando | Qué hace |
+### Channels
+| Command | What it does |
 |---|---|
-| `/crear #canal` | Crea un canal público |
-| `/crear #canal --privado clave` | Crea un canal privado (🔒, solo entran con la clave) |
-| `/join #canal [clave]` | Entra a un canal (la clave solo si es privado) |
-| `/canales` | Lista los canales (los privados con 🔒) |
+| `/crear #channel` | Creates a public channel |
+| `/crear #channel --privado key` | Creates a private channel (🔒, key required to join) |
+| `/join #channel [key]` | Joins a channel (key only if private) |
+| `/canales` | Lists channels (private ones with 🔒) |
 
-### Mensajes
-| Comando | Qué hace |
+### Messages
+| Command | What it does |
 |---|---|
-| *(escribir texto)* | Manda el mensaje al canal actual |
-| `/dm @usuario mensaje` | Mensaje **directo** y privado a una persona |
-| ` ```js … ``` ` | Bloque de código con resaltado (tres comillas invertidas) |
+| *(type text)* | Sends the message to the current channel |
+| `/dm @user message` | **Direct**, private message to a person |
+| ` ```js … ``` ` | Code block with syntax highlighting (three backticks) |
 
-### Estado y presencia
-| Comando | Qué hace |
+### Status and presence
+| Command | What it does |
 |---|---|
-| `/estado QA` · `Desarrollo` · `RYD` · `Disponible` | Pone tu estado (o texto libre) |
-| `/away` | Te marca como ausente |
-| `/back` | Vuelves a disponible |
-| `/board` | Muestra el estado de todos |
-| `/who` | Lista quién está conectado |
+| `/estado QA` · `Development` · `R&D` · `Available` | Sets your status (or free text) |
+| `/away` | Marks you as away |
+| `/back` | Back to available |
+| `/board` | Shows everyone's status |
+| `/who` | Lists who's connected |
 
 ### Color
-| Comando | Qué hace |
+| Command | What it does |
 |---|---|
-| `/color azul` | Cambia tu color (se guarda) |
-| | Paleta: azul · verde · morado · cyan · amarillo · rosa · naranja · blanco |
+| `/color blue` | Changes your color (saved) |
+| | Palette: blue · green · purple · cyan · yellow · pink · orange · white |
 
-### Mesa de trabajo
-| Comando | Qué hace |
+### Work table
+| Command | What it does |
 |---|---|
-| `/mesa` | Dibuja la mesa con los 6 asientos |
-| `/asiento <1-5>` | Te mueves a un asiento libre |
-| | El **host** queda fijo en el asiento **6** (abajo-derecha, marcado con ★) |
+| `/mesa` | Draws the table with 6 seats |
+| `/asiento <1-5>` | Move to a free seat |
+| | The **host** is fixed at seat **6** (bottom-right, marked with ★) |
 
-> El panel derecho muestra la mesa en vivo: cada emoji aparece sentado en su lugar,
-> con su nombre a color y su estado.
+> The right panel shows the table live: each emoji appears seated in its place, with its name
+> in color and its status.
 
-### Utilidades / salir
-| Comando | Qué hace |
+### Utilities / exit
+| Command | What it does |
 |---|---|
-| `/clear` (o `/limpiar`) | Limpia tu pantalla de chat |
-| `/help` | Muestra la lista de comandos |
-| `/quit` | Sale de la oficina |
-| **Ctrl + C (dos veces)** | También sale (el primero avisa, el segundo confirma) |
+| `/clear` (or `/limpiar`) | Clears your chat screen |
+| `/help` | Shows the command list |
+| `/quit` | Leaves the office |
+| **Ctrl + C (twice)** | Also exits (the first warns, the second confirms) |
 
 ---
 
-## 4. Notas
+## 4. Notes
 
-- El host sostiene la oficina: si el host cierra, la oficina se cierra.
-- Hoy funciona en **red local** (sin internet ni cuentas). El transporte está hecho
-  para poder agregar conexión remota más adelante sin cambiar la app.
+- The host holds the office: if the host closes, the office closes.
+- Today it runs on the **local network** (no internet or accounts). The transport layer is built
+  so remote connectivity can be added later without changing the app.
 
-## Desarrollo
+## Development
 
 ```
-npm test    # corre las pruebas (vitest)
+npm test    # runs the tests (vitest)
 ```
